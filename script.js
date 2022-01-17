@@ -6,6 +6,32 @@ class Model {
       {id:2, text: 'Be nice', complete: false}
     ]
   }
+
+  addTask(taskText){
+    // create id
+    let id
+    if(this.tasks.length > 0){
+      id = this.tasks[this.tasks.length - 1].id + 1
+    } else {
+      id = 1
+    }
+    // create task object
+    const task = {
+      id: id,
+      text: taskText,
+      complete: false
+    }
+    // add task to this.tasks
+    this.tasks.push(task)
+    // callback changed controll
+    this.onTaskListChanged(this.tasks)
+  }
+
+  // 
+  taskListChanged(callback){
+    console.log('model - tasks changed')
+    this.onTaskListChanged = callback
+  }
 }
 
 class View {
@@ -16,14 +42,31 @@ class View {
     // title
     this.title = this.setElement('h1')
     this.title.textContent = 'Tasks'
+    // form
+    this.form = this.setElement('form')
+    // form input
+    this.input = this.setElement('input')
+    this.input.type = 'text'
+    this.input.name = 'task'
+    this.input.placeholder = 'Add new task'
+    // submit button
+    this.submitButton = this.setElement('button')
+    this.submitButton.textContent = 'Add task'
+    // add input and button to form
+    this.form.append(this.input, this.submitButton)
     // task list
     this.taskList = this.setElement('ul')
     // append title and task list to app
-    this.app.append(this.title, this.taskList)
+    this.app.append(this.title, this.form, this.taskList)
   }
 
   // display tasks
   displayTasks(tasks){
+    // delete all tasks before displaing
+    while(this.taskList.firstChild){
+      this.taskList.removeChild(this.taskList.firstChild)
+    }
+
     if(tasks.length === 0){
       const p = this.setElement('p')
       p.textContent = 'Add a task if is nothing to do'
@@ -58,10 +101,26 @@ class View {
     }
   }
 
+  // events
+  addTask(handler){
+    this.form.addEventListener('submit', event => {
+      console.log('submit')
+      event.preventDefault()
+      if(this._taskText){
+        handler(this._taskText)
+        this.resetInput()
+      }
+    })
+  }
+
   // getters
   getElement(selector){
     const element = document.querySelector(selector)
     return element
+  }
+
+  get _taskText(){
+    return this.input.value
   }
 
   // setters
@@ -72,6 +131,11 @@ class View {
     }
     return element
   }
+
+  // resetter
+  resetInput(){
+    this.input.value = ''
+  }
 }
 
 class Controller {
@@ -79,11 +143,21 @@ class Controller {
     this.model = model
     this.view = view
 
+    this.model.taskListChanged(this.displayTasks)
+    this.view.addTask(this.handleAddTask)
+ 
     this.displayTasks(this.model.tasks)
+    
   }
 
   displayTasks = tasks => {
+    console.log('controller - tasks changed')
     this.view.displayTasks(tasks)
+  }
+
+  handleAddTask = taskText => {
+    this.model.addTask(taskText)
+    console.log('controller - add task')
   }
 }
 
